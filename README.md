@@ -227,6 +227,101 @@ func PredictMaintenance(equipmentId uint) (*models.Prediction, error) {
 }
 ```
 
+The current implementation of your `PredictMaintenance` function uses a simple approach to predict maintenance or failure probability based on the **mean value** of sensor data (e.g., temperature, or other values that sensors might record). Here’s an overview of how the prediction works:
+
+### 1. **Data Collection (Historical Sensor Data)**
+   - The function first collects historical sensor data for a specific `equipmentId` from the database.
+   - It queries the `Sensor` table using the `equipmentId` and fetches all related sensor records.
+
+   ```go
+   var sensors []models.Sensor
+   if err := db.DB.Where("equipment_id = ?", equipmentId).Find(&sensors).Error; err != nil {
+       return nil, err
+   }
+   ```
+
+### 2. **Simple Analysis (Mean Calculation)**
+   - The function calculates the **mean** (average) value of all the sensor readings for that equipment. The assumption here is that the sensors record a value that can be averaged (for example, temperature, pressure, humidity, etc.).
+   
+   ```go
+   var sum float64
+   for _, sensor := range sensors {
+       sum += sensor.Value
+   }
+
+   meanValue := sum / float64(len(sensors))
+   ```
+
+   - The `meanValue` represents the average reading from all sensors associated with that equipment.
+
+### 3. **Failure Prediction (Based on Threshold)**
+   - The function predicts the likelihood of failure based on the `meanValue` of the sensor readings. For simplicity, a threshold value of `70.0` is used:
+     - If the mean value of the sensor readings is greater than `70.0`, it assumes that the equipment is at a higher risk of failure, so the failure probability is set to `0.8` (i.e., 80% probability of failure).
+     - If the mean value is below or equal to `70.0`, the failure probability is set to `0.0` (no predicted failure).
+
+   ```go
+   probability := 0.0
+   if meanValue > 70.0 { // Threshold for temperature-based failure prediction
+       probability = 0.8
+   }
+   ```
+
+   This approach is simplistic because it relies on just one threshold value (`70.0`). In a real-world scenario, you'd want a more sophisticated model that takes into account:
+   - Sensor type (e.g., temperature, vibration, pressure)
+   - Equipment-specific failure patterns
+   - Historical failure data (machine learning models)
+   - Trends over time, and much more.
+
+### 4. **Prediction Record Creation**
+   - Once the failure probability is determined, the function creates a prediction record (`models.Prediction`) with the following data:
+     - `EquipmentID`: The ID of the equipment being analyzed.
+     - `PredictedFailureDate`: The predicted failure date. In this case, it is set to 30 hours from the current time.
+     - `FailureProbability`: The failure probability calculated earlier (either `0.0` or `0.8`).
+
+   ```go
+   prediction := models.Prediction{
+       EquipmentID:          equipmentId,
+       PredictedFailureDate: time.Now().Add(30 * time.Hour), // Predict failure in 30 hours
+       FailureProbability:   probability,
+   }
+   ```
+
+   - This prediction record is saved in the database using `db.DB.Create(&prediction)`.
+
+### 5. **Return the Prediction**
+   - Finally, the function returns the created prediction record (`prediction`) to the caller, along with any errors encountered during the process.
+
+   ```go
+   return &prediction, nil
+   ```
+
+### **How It Predicts Maintenance**
+- **Simple Thresholding:** The failure prediction here is based on a simple threshold-based approach:
+  - The equipment is predicted to fail (80% probability) if the average sensor reading exceeds a predefined threshold (`70.0` in this case).
+  - If the sensor reading is below the threshold, it predicts no failure (0% probability).
+  
+  This approach doesn't involve complex modeling (like machine learning), but it uses a rule of thumb (threshold) to determine failure probability based on past sensor data.
+
+### **Limitations of the Current Prediction**
+- **Over-Simplification:** The current approach is quite simple and uses only one threshold. In reality, you'd likely want to predict failure based on multiple factors, such as:
+  - Trends in sensor data over time (e.g., increasing temperature or vibrations).
+  - Anomalies or patterns in sensor data (machine learning could help here).
+  - Equipment type and specific characteristics.
+  
+- **No Trend Analysis:** Right now, you’re using a single snapshot (mean of current sensor values), but failure prediction would be much more accurate if you considered how values are changing over time (e.g., increasing temperature or vibrations).
+
+- **Data-Driven Predictions:** You can enhance the prediction by implementing predictive models like:
+  - **Time-series forecasting** to predict failure based on historical trends.
+  - **Anomaly detection** algorithms to spot unusual behavior in sensor data.
+
+### **Next Steps for Better Predictions**
+- **Data Preprocessing:** Filter the sensors based on type, date range, etc.
+- **Machine Learning:** Train a machine learning model on historical sensor data to learn the patterns leading up to failure.
+- **Statistical Modeling:** Use statistical methods like regression or time-series analysis to better predict failure probabilities.
+- **Multiple Sensors:** Consider how multiple sensor values (e.g., temperature, vibration) affect failure, rather than just one sensor type.
+
+This simple prediction model is just a starting point, and it can be significantly improved with more data and advanced techniques.
+
 #### **8. Test and Refine Predictive Models**
 - Test your predictive model with historical data to check its accuracy.
 - Refine the model to improve prediction accuracy, potentially adding more complex features, such as environmental factors or combining multiple sensors.
