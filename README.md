@@ -2,7 +2,7 @@
 
 #### **1. Define System Requirements & Scope**
 Before diving into the code, it's essential to define the basic requirements of the predictive maintenance system.
-- **Use Case**: Determine which type of equipment or vehicles you'll be monitoring. For instance, **Tesla's vehicles** or **industrial machinery** at **Dassault Systems**.
+- **Use Case**: Determine which type of equipment or vehicles you'll be monitoring. 
 - **Key Metrics to Monitor**: Identify key performance indicators (KPIs) such as temperature, vibration, motor performance, fuel consumption, etc.
 - **Prediction Goal**: Predict failure or maintenance needs based on historical data or real-time sensor data.
 
