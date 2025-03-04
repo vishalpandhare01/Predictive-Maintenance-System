@@ -29,10 +29,10 @@ func calculateMedian(sensors []models.Sensor) float64 {
 	return values[n/2]
 }
 
-func PredictMaintenance(equipmentId string) (*models.Prediction, error) {
+func PredictMaintenance(equipmentId string, sensorType string) (*models.Prediction, error) {
 	// Collect historical sensor data for the specific equipment
 	var sensors []models.Sensor
-	if err := db.DB.Where("equipment_id = ?", equipmentId).Find(&sensors).Error; err != nil {
+	if err := db.DB.Where("equipment_id = ? and type = ?", equipmentId, sensorType).Find(&sensors).Error; err != nil {
 		return nil, err
 	}
 

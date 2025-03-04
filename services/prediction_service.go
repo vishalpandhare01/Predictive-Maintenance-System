@@ -19,7 +19,7 @@ func AddSensorData(c *fiber.Ctx) error {
 	if err := db.DB.Create(&sensor).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"message": "Failed to save data"})
 	}
-	_, err := utils.PredictMaintenance(sensor.EquipmentID)
+	_, err := utils.PredictMaintenance(sensor.EquipmentID, sensor.Type)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 	}
