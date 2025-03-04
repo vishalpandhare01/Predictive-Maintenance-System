@@ -93,8 +93,18 @@ func DeleteEquipmentData(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"message": "Failed to get data"})
 	}
 
+	// Delete dependent records in predictions table
+	if err := db.DB.Where("equipment_id = ?", equipment.ID).Delete(&models.Prediction{}).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"message": "Failed to delete dependent records"})
+	}
+
+	// Delete dependent records in sensor table
+	if err := db.DB.Where("equipment_id = ?", equipment.ID).Delete(&models.Sensor{}).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"message": "Failed to delete dependent records"})
+	}
+
 	// Delete the equipment record
-	if err := db.DB.Delete(&equipment).Error; err != nil {
+	if err := db.DB.Where("id = ?", equipment.ID).Delete(&models.Equipment{}).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 	}
 
